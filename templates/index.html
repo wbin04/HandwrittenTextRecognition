@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwritten Text Recognition</title>
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+        }
+
+        canvas { 
+            border: 3px solid black; 
+            border-radius: 5px;
+            background-color: white; 
+            cursor: pointer;
+        }
+        button { 
+            margin-top: 10px; 
+            padding: 10px;
+            width: 200px;
+            background-color: white;
+            border-radius: 5px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s linear;
+        }
+        .btnClear {
+            color: red;
+            border: 3px solid red;
+        }
+        .btnErase {
+            color: orange;
+            border: 3px solid orange;
+        }
+        .btnRec {
+            color: green;
+            border: 3px solid green;
+        }
+        .btnClear:hover {
+            background-color: red;
+            color: white;
+        }
+        .btnErase:hover {
+            background-color: orange;
+            color: white;
+        }
+        .btnRec:hover {
+            background-color: green;
+            color: white;
+        }
+        h3 {
+            font-size: 1.3em;
+            width: 600px;
+            align-items: center;
+        }
+        input {
+            cursor: default;
+            margin-left: 10px;
+            padding: 5px;
+            font-size: 1.3em;
+            border: none;
+        }
+    </style>
+</head>
+<body style="display: flex; flex-direction: column; align-items: center;">
+    <h1>Handwritten Text Recognition</h1>
+    <canvas id="canvas" width="600" height="300"></canvas>
+    <br>
+    <div>
+        <button onclick="clearCanvas()" class="btnClear">Clear</button>
+        <button onclick="eraseCanvas()" class="btnErase">Erase</button>
+        <button onclick="recognize()" class="btnRec">Recognize</button>
+    </div>
+    <!-- <p id="result"></p> -->
+    <h3>Recognized Text: <input type="text" id="result" readonly></h3>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let painting = false;
+
+        ctx.fillStyle = "white"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+
+        canvas.addEventListener("mousedown", () => painting = true);
+        canvas.addEventListener("mouseup", () => {
+            painting = false;
+            ctx.beginPath();
+        });
+        canvas.addEventListener("mousemove", draw);
+
+        // function draw(event) {
+        //     if (!painting) return;
+        //     ctx.strokeStyle = "black";
+        //     ctx.lineTo(event.offsetX, event.offsetY);
+        //     ctx.stroke();
+        //     ctx.beginPath();
+        //     ctx.moveTo(event.offsetX, event.offsetY);
+        // }
+
+        function clearCanvas() {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            document.getElementById("result").value = ""
+        }
+
+        let isErasing = false;
+
+        function eraseCanvas() {
+            isErasing = !isErasing; 
+            document.querySelector(".btnErase").textContent = isErasing ? "Draw" : "Erase";  
+        }
+
+        function draw(event) {
+            if (!painting) return;
+            ctx.strokeStyle = isErasing ? "white" : "black";  
+            ctx.lineWidth = isErasing ? 25 : 5;  
+            ctx.lineTo(event.offsetX, event.offsetY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(event.offsetX, event.offsetY);
+        }
+
+        function recognize() {
+            const imageData = canvas.toDataURL("image/png"); 
+            fetch("/recognize", {
+                method: "POST",
+                body: JSON.stringify({ image: imageData }),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => document.getElementById("result").value = data.text)
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
